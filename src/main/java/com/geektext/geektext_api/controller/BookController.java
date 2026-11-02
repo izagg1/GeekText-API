@@ -2,33 +2,87 @@ package com.geektext.geektext_api.controller;
 
 import com.geektext.geektext_api.model.Book;
 import com.geektext.geektext_api.repository.BookRepository;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
 
 @RestController
 @RequestMapping("/books")
 public class BookController {
-    private final BookRepository repo;
 
-    public BookController(BookRepository repo) {
-        this.repo = repo;
+    private final BookRepository bookRepository;
+
+    public BookController(BookRepository bookRepository) {
+        this.bookRepository = bookRepository;
     }
+
+    // ---- Book Details (Julian) ----
 
     @GetMapping("/{isbn}")
     public ResponseEntity<Book> getByIsbn(@PathVariable String isbn) {
-        return repo.findByIsbn(isbn)
+        return bookRepository.findByIsbn(isbn)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
     @PostMapping
     public ResponseEntity<Void> createBook(@RequestBody Book book) {
-        if (repo.findByIsbn(book.getIsbn()).isPresent()) {
+        if (bookRepository.findByIsbn(book.getIsbn()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
         book.setId(null);
-        repo.save(book);
+        bookRepository.save(book);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    // ---- Book Browsing and Sorting (Gabriel) ----
+
+    @GetMapping("/genre/{genre}")
+    public List<Book> getBooksByGenre(@PathVariable String genre) {
+        return bookRepository.findByGenreIgnoreCase(genre);
+    }
+
+    @GetMapping("/top-sellers")
+    public List<Book> getTopSellers() {
+        return bookRepository.findTop10ByOrderByCopiesSoldDesc();
+    }
+
+    @GetMapping("/rating/{rating}")
+    public List<Book> getBooksByRating(@PathVariable double rating) {
+        return bookRepository.findBooksByMinimumRating(rating);
+    }
+
+    @PatchMapping("/discount")
+    @Transactional
+    public ResponseEntity<Void> discountBooksByPublisher(
+            @RequestParam String publisher,
+            @RequestParam BigDecimal percent) {
+
+        if (percent.compareTo(BigDecimal.ZERO) < 0 ||
+                percent.compareTo(new BigDecimal("100")) > 0) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<Book> books = bookRepository.findByPublisherIgnoreCase(publisher);
+
+        BigDecimal multiplier = BigDecimal.ONE.subtract(
+                percent.divide(new BigDecimal("100"))
+        );
+
+        for (Book book : books) {
+            BigDecimal newPrice = book.getPrice()
+                    .multiply(multiplier)
+                    .setScale(2, RoundingMode.HALF_UP);
+            book.setPrice(newPrice);
+        }
+
+        bookRepository.saveAll(books);
+
+        return ResponseEntity.noContent().build();
     }
 }
