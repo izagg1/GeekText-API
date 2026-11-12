@@ -4,6 +4,9 @@ package com.geektext.geektext_api.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+import lombok.Setter;
+
+@Setter
 @Entity
 @Table(name = "ratings")
 public class Rating {
