@@ -24,13 +24,9 @@ public class WishlistBook {
     }
 
     public WishlistBook(Wishlist wishlist, Book book) {
-        this.wishlist = wishlist;
-        this.book = book;
-        this.id = new WishlistBookId(
-            wishlist.getId(),
-            book.getId()
-        );
-    }
+    this.wishlist = wishlist;
+    this.book = book;
+}
 
     public WishlistBookId getId() {
         return id;
