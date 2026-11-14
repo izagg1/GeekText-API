@@ -2,14 +2,19 @@
 package com.geektext.geektext_api.model;
 
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.Column;
 import java.io.Serializable;
 import java.util.Objects;
+
 
 @Embeddable
 public class WishlistBookId implements Serializable {
 
-    private Long wishlistId;
-    private Long bookId;
+@Column(name = "wishlist_id")
+private Long wishlistId;
+
+@Column(name = "book_id")
+private Long bookId;
 
     public WishlistBookId() {
     }
